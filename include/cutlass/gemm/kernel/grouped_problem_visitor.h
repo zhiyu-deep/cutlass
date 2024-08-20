@@ -59,12 +59,13 @@ enum class GroupScheduleMode {
 template <typename ProblemSizeHelper,
           typename ThreadblockShape_>
 struct BaseGroupedProblemVisitor {
+  using problemSizeHelper = ProblemSizeHelper;
   using ThreadblockShape = ThreadblockShape_;
 
   struct ProblemInfo {
     static int32_t const kNoPrefetchEntry = -1;
-    int32_t problem_idx;
-    int32_t problem_start;
+    int32_t problem_idx;    // todo: 当前problem index.
+    int32_t problem_start;  // todo: 当前problem首个tile在global tile中的index.
 
     CUTLASS_DEVICE
     ProblemInfo() : problem_idx(kNoPrefetchEntry), problem_start(kNoPrefetchEntry) {}
@@ -105,9 +106,9 @@ struct BaseGroupedProblemVisitor {
   };
 
   Params params;
-  int32_t tile_idx;
-  int32_t problem_tile_start;
-  int32_t problem_idx;
+  int32_t tile_idx;            // todo: 当前global tile index.
+  int32_t problem_tile_start;  // todo: 值来自读取到的problemInfo, 当前problem首个tile在global tile中的index.
+  int32_t problem_idx;         // todo: 值来自读取到的problemInfo, 当前problem index.
 
   //
   // Methods
@@ -141,6 +142,7 @@ struct BaseGroupedProblemVisitor {
     return problem_idx;
   }
 
+  // todo: 用来获得block在当前problem的tile index.
   CUTLASS_HOST_DEVICE
   int32_t threadblock_idx() const {
     return tile_idx - problem_tile_start;
@@ -434,6 +436,9 @@ struct GroupedProblemVisitor<ProblemSizeHelper,
       auto grid = Base::grid_shape(problem);
       int tiles = Base::tile_count(grid);
       ProblemInfo problem_info(p_idx, start_tile);
+      // todo:
+      //  1. tile表示global tile index.
+      //  2. tile % block_count, 表示tile沿着blocks维度排放.
       for (int i = 0; i < tiles; ++i, ++tile) {
         host_problem_info_ptr[(entries_per_block * (tile % block_count)) + (tile / block_count)] = problem_info;
       }
@@ -441,8 +446,8 @@ struct GroupedProblemVisitor<ProblemSizeHelper,
     }
   }
 #endif
-private:
-  CUTLASS_DEVICE
+public:
+  CUTLASS_HOST_DEVICE
   void prefetch_tiles() {
     CUTLASS_PRAGMA_UNROLL
     for (int32_t i = 0; i < kPrefetchTileCount; i += kThreadCount) {

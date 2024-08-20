@@ -1560,6 +1560,48 @@ int main(int argc, char const **args) {
         {
           TestbedGrouped<GemmGrouped, GroupScheduleMode::kHostPrecompute> runner(options);
           result = runner.profile();
+
+          // todo: note.
+          {
+            // todo: 1. devide.
+            using deviceGemm = typename TestbedGrouped<GemmGrouped, GroupScheduleMode::kHostPrecompute>::Gemm;
+            using arguments = typename deviceGemm::Arguments;
+            {
+              auto _ = arguments();
+            }
+            auto _ = deviceGemm::get_workspace_size;
+            auto __ = &deviceGemm::initialize;
+            auto ___ = &deviceGemm::run;
+
+            {
+              // todo: 2. kernel.
+              using kernelGemm = typename deviceGemm::GemmKernel;
+
+              {
+                // todo: 2.1 visitors.
+                using visitor = typename kernelGemm::ProblemVisitor;  // GemmGroupedProblemVisitor
+                using baseVisitor = typename visitor::Base;           // GroupedProblemVisitor: 主要提供切分的方式.
+                {
+                  auto hostCompute = &baseVisitor::host_precompute;
+                  auto prefetch = &baseVisitor::prefetch_tiles;
+                }
+                using baseBaseVisitor = typename baseVisitor::Base;   // BaseGroupedProblemVisitor: 主要提供遍历方式.
+                using _ = typename baseBaseVisitor::Params;
+                using problemInfo = typename baseBaseVisitor::ProblemInfo;
+                using problemSizeHelper = typename baseBaseVisitor::problemSizeHelper;
+                {
+                  auto _ = problemSizeHelper::grid_shape;
+                }
+                using threadBlockShape = typename baseBaseVisitor::ThreadblockShape;
+                {
+                  auto m = threadBlockShape::kM, // 128
+                  k = threadBlockShape::kK, // 32
+                  n = threadBlockShape::kN; // 128
+                }
+              }
+            }
+          }
+
           break;
         }
     }
