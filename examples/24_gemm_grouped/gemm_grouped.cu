@@ -1578,25 +1578,34 @@ int main(int argc, char const **args) {
               using kernelGemm = typename deviceGemm::GemmKernel;
 
               {
+                // todo: 2.2 mma.
+                using mma = typename kernelGemm::Mma;
+                {
+                  using _ = mma::Detail;
+                }
                 // todo: 2.1 visitors.
                 using visitor = typename kernelGemm::ProblemVisitor;  // GemmGroupedProblemVisitor
                 using baseVisitor = typename visitor::Base;           // GroupedProblemVisitor: 主要提供切分的方式.
                 {
                   auto hostCompute = &baseVisitor::host_precompute;
                   auto prefetch = &baseVisitor::prefetch_tiles;
+                  auto _ = &baseVisitor::next_tile;
                 }
-                using baseBaseVisitor = typename baseVisitor::Base;   // BaseGroupedProblemVisitor: 主要提供遍历方式.
-                using _ = typename baseBaseVisitor::Params;
-                using problemInfo = typename baseBaseVisitor::ProblemInfo;
-                using problemSizeHelper = typename baseBaseVisitor::problemSizeHelper;
+                using baseBaseVisitor = typename baseVisitor::Base;   // BaseGroupedProblemVisitor: 主要提供遍历方式, 遍历的基本信息.
                 {
-                  auto _ = problemSizeHelper::grid_shape;
-                }
-                using threadBlockShape = typename baseBaseVisitor::ThreadblockShape;
-                {
-                  auto m = threadBlockShape::kM, // 128
-                  k = threadBlockShape::kK, // 32
-                  n = threadBlockShape::kN; // 128
+                  using _ = typename baseBaseVisitor::Params;
+                  using problemInfo = typename baseBaseVisitor::ProblemInfo;
+                  using problemSizeHelper = typename baseBaseVisitor::problemSizeHelper;
+                  {
+                    auto _ = problemSizeHelper::grid_shape;
+                  }
+                  using threadBlockShape =
+                      typename baseBaseVisitor::ThreadblockShape;
+                  {
+                    auto m = threadBlockShape::kM, // 128
+                        k = threadBlockShape::kK,  // 32
+                        n = threadBlockShape::kN;  // 128
+                  }
                 }
               }
             }

@@ -384,7 +384,7 @@ struct GroupedProblemVisitor<ProblemSizeHelper,
     prefetch_tiles();
   }
 
-  CUTLASS_DEVICE
+  CUTLASS_HOST_DEVICE
   bool next_tile() {
     if (this->tile_idx >= this->params.tile_count) {
       return false;
