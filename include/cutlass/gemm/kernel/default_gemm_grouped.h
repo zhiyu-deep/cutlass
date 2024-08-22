@@ -210,8 +210,7 @@ struct DefaultGemmGrouped<
     kInternalTranspose
   >;
 
-  // Define the default GEMM kernel
-  using DefaultGemmKernel = typename kernel::DefaultGemm<
+  using DefaultGemmKernelContainer = kernel::DefaultGemm<
     typename MapArguments::ElementA,
     typename MapArguments::LayoutA,
     MapArguments::kAlignmentA,
@@ -236,8 +235,11 @@ struct DefaultGemmGrouped<
     false, /*GatherB*/
     false, /*ScatterD*/
     PermuteDLayout
-  >::GemmKernel;
+  >;
+  // Define the default GEMM kernel
+  using DefaultGemmKernel = typename DefaultGemmKernelContainer::GemmKernel;
 
+  // todo: 用default kernel中的内容来组装grouped gemm.
     /// Define the kernel in terms of the default kernel
   using GemmKernel = kernel::GemmGrouped<
     typename DefaultGemmKernel::Mma,

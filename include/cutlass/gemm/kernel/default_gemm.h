@@ -359,13 +359,14 @@ struct DefaultGemm<ElementA, LayoutA, kAlignmentA, ElementB, LayoutB, kAlignment
              || platform::is_same<LayoutC, layout::AffineRankN<2>>::value),
              "Epilogue in the kernel level must be row major");
 
+  using MmaContainer = cutlass::gemm::threadblock::DefaultMma<
+    ElementA, LayoutA, kAlignmentA, ElementB, LayoutB, kAlignmentB,
+    ElementAccumulator, LayoutC, arch::OpClassTensorOp, arch::Sm80,
+    ThreadblockShape, WarpShape, InstructionShape, Stages,
+    Operator, false, SharedMemoryClear, GatherA, GatherB,
+    PermuteALayout, PermuteBLayout>;
   /// Define the threadblock-scoped matrix multiply-accumulate
-  using Mma = typename cutlass::gemm::threadblock::DefaultMma<
-      ElementA, LayoutA, kAlignmentA, ElementB, LayoutB, kAlignmentB,
-      ElementAccumulator, LayoutC, arch::OpClassTensorOp, arch::Sm80,
-      ThreadblockShape, WarpShape, InstructionShape, Stages,
-      Operator, false, SharedMemoryClear, GatherA, GatherB,
-      PermuteALayout, PermuteBLayout>::ThreadblockMma;
+  using Mma = typename MmaContainer::ThreadblockMma;
 
   static const int kPartitionsK = ThreadblockShape::kK / WarpShape::kK;
 

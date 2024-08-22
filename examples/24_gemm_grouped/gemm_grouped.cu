@@ -1164,8 +1164,7 @@ public:
     uint32_t seed_ = 3080
   ): BaseTestbed<Gemm_>(options_, init_A_, init_B_, init_C_, seed_) {}
 
-  // Redefine GEMM with different GroupScheduleMode_
-  using GemmKernel = typename cutlass::gemm::kernel::DefaultGemmGrouped<
+  using GemmKernelContainer = cutlass::gemm::kernel::DefaultGemmGrouped<
     typename Gemm_::ElementA,
     typename Gemm_::LayoutA,
     Gemm_::kTransformA,
@@ -1185,7 +1184,9 @@ public:
     typename Gemm_::EpilogueOutputOp,
     typename Gemm_::ThreadblockSwizzle,
     Gemm_::kStages,
-    GroupScheduleMode_>::GemmKernel;
+    GroupScheduleMode_>;
+  // Redefine GEMM with different GroupScheduleMode_
+  using GemmKernel = typename GemmKernelContainer::GemmKernel;
 
   using Gemm = cutlass::gemm::device::GemmGrouped<GemmKernel>;
 
@@ -1563,8 +1564,64 @@ int main(int argc, char const **args) {
 
           // todo: note.
           {
-            // todo: 1. devide.
-            using deviceGemm = typename TestbedGrouped<GemmGrouped, GroupScheduleMode::kHostPrecompute>::Gemm;
+            // todo: 1. kernel container.
+            using gemmKernelContainer = typename TestbedGrouped<GemmGrouped, GroupScheduleMode::kHostPrecompute>::GemmKernelContainer;
+            {
+              // todo: 1. default kernel container.
+              using defaultGemmContainer = typename gemmKernelContainer::DefaultGemmKernelContainer;
+              {
+                // todo: 1.1 mma container.
+                using mmaContainer = typename defaultGemmContainer::MmaContainer;
+                {
+                  // todo: 1.1.1 mma core container.
+                  using MmaCore = typename mmaContainer::MmaCore;
+
+                  // todo: 1.1.2 从mma core中获取threadMap.
+
+                  // todo: 1.1.3 iterator.
+                  using IteratorA = typename mmaContainer::IteratorA;
+                  using IteratorB = typename mmaContainer::IteratorB;
+
+                  // todo: 1.1.4 控制multi stage的block.
+                  using threadblockMma = typename mmaContainer::ThreadblockMma;
+                  {
+                    using a = threadblockMma ::Detail;
+                  }
+                }
+
+                // todo: 1.2 default gemm kernel.
+                using kernelGemm = typename defaultGemmContainer::GemmKernel;
+              }
+            }
+            // todo: 2. grouped gemm kernel.
+            using kernelGemm = typename gemmKernelContainer::GemmKernel;
+            {
+              using visitor = typename kernelGemm::ProblemVisitor;  // GemmGroupedProblemVisitor
+              using baseVisitor = typename visitor::Base;           // GroupedProblemVisitor: 主要提供切分的方式.
+              {
+                auto hostCompute = &baseVisitor::host_precompute;
+                auto prefetch = &baseVisitor::prefetch_tiles;
+                auto _ = &baseVisitor::next_tile;
+              }
+              using baseBaseVisitor = typename baseVisitor::Base;   // BaseGroupedProblemVisitor: 主要提供遍历方式, 遍历的基本信息.
+              {
+                using _ = typename baseBaseVisitor::Params;
+                using problemInfo = typename baseBaseVisitor::ProblemInfo;
+                using problemSizeHelper = typename baseBaseVisitor::problemSizeHelper;
+                {
+                  auto _ = problemSizeHelper::grid_shape;
+                }
+                using threadBlockShape =
+                  typename baseBaseVisitor::ThreadblockShape;
+                {
+                  auto m = threadBlockShape::kM, // 128
+                  k = threadBlockShape::kK,  // 32
+                  n = threadBlockShape::kN;  // 128
+                }
+              }
+            }
+            // todo: 3. device
+            using deviceGemm = typename TestbedGrouped<GemmGrouped, GroupScheduleMode::kHostPrecompute>::Gemm;  // 1. 创建kernel, 2. 创建device, 3. 这样一来, device代码中包含kernel, 即可以完成推理流程.
             using arguments = typename deviceGemm::Arguments;
             {
               auto _ = arguments();
@@ -1572,43 +1629,6 @@ int main(int argc, char const **args) {
             auto _ = deviceGemm::get_workspace_size;
             auto __ = &deviceGemm::initialize;
             auto ___ = &deviceGemm::run;
-
-            {
-              // todo: 2. kernel.
-              using kernelGemm = typename deviceGemm::GemmKernel;
-
-              {
-                // todo: 2.2 mma.
-                using mma = typename kernelGemm::Mma;
-                {
-                  using _ = mma::Detail;
-                }
-                // todo: 2.1 visitors.
-                using visitor = typename kernelGemm::ProblemVisitor;  // GemmGroupedProblemVisitor
-                using baseVisitor = typename visitor::Base;           // GroupedProblemVisitor: 主要提供切分的方式.
-                {
-                  auto hostCompute = &baseVisitor::host_precompute;
-                  auto prefetch = &baseVisitor::prefetch_tiles;
-                  auto _ = &baseVisitor::next_tile;
-                }
-                using baseBaseVisitor = typename baseVisitor::Base;   // BaseGroupedProblemVisitor: 主要提供遍历方式, 遍历的基本信息.
-                {
-                  using _ = typename baseBaseVisitor::Params;
-                  using problemInfo = typename baseBaseVisitor::ProblemInfo;
-                  using problemSizeHelper = typename baseBaseVisitor::problemSizeHelper;
-                  {
-                    auto _ = problemSizeHelper::grid_shape;
-                  }
-                  using threadBlockShape =
-                      typename baseBaseVisitor::ThreadblockShape;
-                  {
-                    auto m = threadBlockShape::kM, // 128
-                        k = threadBlockShape::kK,  // 32
-                        n = threadBlockShape::kN;  // 128
-                  }
-                }
-              }
-            }
           }
 
           break;

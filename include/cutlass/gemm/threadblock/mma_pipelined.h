@@ -198,7 +198,8 @@ public:
   }
 
 
-  /// Advance shared memory write-iterators to the next stage
+  // todo: smem write向前.
+      /// Advance shared memory write-iterators to the next stage
   CUTLASS_DEVICE
   void advance_smem_write_stage()
   {
@@ -214,7 +215,8 @@ public:
     smem_write_stage_idx ^= 1;
   }
 
-  /// Advance shared memory read- and write-iterators to the next stage
+  // todo: smem write向前加后退.
+      /// Advance shared memory read- and write-iterators to the next stage
   CUTLASS_DEVICE
   void advance_smem_stages()
   {
