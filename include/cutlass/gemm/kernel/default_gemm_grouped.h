@@ -218,7 +218,7 @@ struct DefaultGemmGrouped<
     typename MapArguments::LayoutB,
     MapArguments::kAlignmentB,
     ElementC,
-    typename MapArguments::LayoutC,
+    typename MapArguments::LayoutC,  // todo: if true, MapArguments::LayoutC -> rowMajor; if false, MapArguments::LayoutC -> rowMajor.
     ElementAccumulator,
     OperatorClass,
     ArchTag,

@@ -1562,6 +1562,8 @@ int main(int argc, char const **args) {
           TestbedGrouped<GemmGrouped, GroupScheduleMode::kHostPrecompute> runner(options);
           result = runner.profile();
 
+          // todo: cutlass中layout假设, ABC都是相同layout, 同为column或者同为row!
+
           // todo: note.
           {
             // todo: 1. kernel container.
@@ -1575,22 +1577,54 @@ int main(int argc, char const **args) {
                 {
                   // todo: 1.1.1 mma core container.
                   using MmaCore = typename mmaContainer::MmaCore;
+                  {
+                    using layoutC = MmaCore::LayoutC;            // RowMajor.
+                  }
 
-                  // todo: 1.1.2 从mma core中获取threadMap.
-
-                  // todo: 1.1.3 iterator.
-                  using IteratorA = typename mmaContainer::IteratorA;
+                  // todo: 1.1.2 global A&B iterator.
+                  using threadMapA = typename mmaContainer::ThreadMapA;
+                  {
+                    unsigned kElementsAccess = threadMapA::kElementsPerAccess;  // 8.
+                  }
+                  using vecTypeA = typename mmaContainer::AccessTypeA;
+                  using iteratorA = typename mmaContainer::IteratorA;
+                  {
+                    using layoutA = typename iteratorA::Layout;    // RowMajor.
+                    auto kAdvanceRank = iteratorA ::kAdvanceRank;  // rank = 1.
+                    using underlyIterator = typename iteratorA::UnderlyingIterator;
+                    {
+                      using predicate = typename underlyIterator::UnderlyingPredicates;
+                    }
+                  }
+                  using threadMapB = typename mmaContainer::ThreadMapB;
+                  using vecTypeB = typename mmaContainer::AccessTypeB;
                   using IteratorB = typename mmaContainer::IteratorB;
+                  {
+                    using layoutB = typename IteratorB::Layout;    // RowMajor.
+                    auto kAdvanceRank = IteratorB ::kAdvanceRank;  // rank = 0.
+                  }
 
-                  // todo: 1.1.4 控制multi stage的block.
+                  // todo: 1.1.3 控制multi stage的block.
                   using threadblockMma = typename mmaContainer::ThreadblockMma;
                   {
-                    using a = threadblockMma ::Detail;
+                    auto _ = &threadblockMma::operator();
                   }
                 }
 
-                // todo: 1.2 default gemm kernel.
+                // todo: 1.2 epilogue.
+
+                // todo: 1.3 default gemm kernel.
                 using kernelGemm = typename defaultGemmContainer::GemmKernel;
+                {
+                  using a = kernelGemm::SharedStorage;
+                  auto _ = &kernelGemm::operator();
+                }
+              }
+
+              // todo: 2. grouped gemm kernel.
+              using kernelGemm = typename gemmKernelContainer::GemmKernel;
+              {
+                auto _ = &kernelGemm::operator();
               }
             }
             // todo: 2. grouped gemm kernel.

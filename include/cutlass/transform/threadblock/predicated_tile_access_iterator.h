@@ -200,12 +200,15 @@ class PredicatedTileAccessIteratorPredicates {
         min(threadblock_offset.strided() + residue_size, extent_.strided())
       );
     } else {
-
+      // todo:
+      //  1. extent含义, 代表整体的problem size(当k维度存在多个block的时候, 则代表当前block处理的末端, extent = (blockIdx + 1) * blockSize).
+      //  2. threadblock_offset含义, 代表当前block在problem中的offset.
       typename TensorCoord::Index residue_size = (extent_[kAdvanceRank] - threadblock_offset.contiguous()) % Shape::kContiguous;
       if (!residue_size) {
         residue_size = Shape::kContiguous;
       }
 
+      // todo: Offset to the first steady-state tile in block.
       residue_offset_ = make_Coord(residue_size, 0);
       
       residue_extent = make_Coord(
@@ -507,6 +510,7 @@ class PredicatedTileAccessIterator<Shape_, Element_, layout::PitchLinear,
     pointer_ += sizeof_bits<Element>::value * pointer_offset / 8;
   }
 
+  // todo: 1个tile为1个block stage, 此处以整个block为单位进行偏移.
   /// Advances an iterator along logical dimensions of matrix in units of whole tiles
   CUTLASS_DEVICE
   void add_tile_offset(
@@ -580,12 +584,17 @@ class PredicatedTileAccessIterator<Shape_, Element_, layout::PitchLinear,
       return reinterpret_cast<AccessType *>(pointer_ + OffsetBytes<Element>(offset));
     }
 
+    // todo: 在++的过程中, pointer会在stride方向更新, 所以此处只需要在contiguous方向偏移获取具体的地址信息.
     return reinterpret_cast<AccessType *>(
         pointer_ + 
         the_predicates.iteration_contiguous_ * (ThreadMap::Delta::kContiguous * sizeof_bits<Element>::value) / 8) + the_predicates.iteration_vector_;
   }
 
-  /// Increment and return an instance to self.
+  // todo:
+  //  1. 每个block为1个tile, tile内部遍历次数: accesses in vec(128 bit) * contiguous * stride
+  //     此处以1个kAccessVec为单位进行偏移.
+  //  2. 在++的过程中, pointer会在stride方向更新, 完成1个tile会回到tile起始的pointer.
+      /// Increment and return an instance to self.
   CUTLASS_HOST_DEVICE
   PredicatedTileAccessIterator &operator++() {
 

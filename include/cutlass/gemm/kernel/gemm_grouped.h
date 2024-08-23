@@ -86,6 +86,7 @@ public:
     kTransposed
   >;
 
+  // todo: 下面是实际场景的layout.
   // Public-facing type definitions related to operand element type, layout, and complex conjugate
   // operation. Must interact with the 'kTransposed' notion.
   using ElementA = typename MapArguments::ElementA;
@@ -293,7 +294,7 @@ public:
   }
  
   /// Executes one GEMM
-  CUTLASS_DEVICE
+  CUTLASS_HOST_DEVICE
   void operator()(Params const &params, SharedStorage &shared_storage) {
 
     //
@@ -329,6 +330,7 @@ public:
         int(threadblock_idx % grid_shape.n()) * Mma::Shape::kN,
         0);
 
+      // todo: 通过变换A和B完成layout转换, 基于的前提: ABC layout相同.
       // Load element pointers. Exchange pointers and strides if working on the transpose
       ElementA *ptr_A = reinterpret_cast<ElementA *>((kTransposed ? params.ptr_B[problem_idx] : params.ptr_A[problem_idx]));
       typename LayoutA::LongIndex ldm_A = (kTransposed ? params.ldb[problem_idx] : params.lda[problem_idx]);
@@ -350,6 +352,7 @@ public:
       // Compute position within threadblock
       int thread_idx = threadIdx.x;
 
+      // todo: 此处的layout是mma中用到layout, 此处的AB已经通过exchange满足layout条件了.
       // Construct iterators to A and B operands
       typename Mma::IteratorA iterator_A(
         LayoutA(ldm_A),

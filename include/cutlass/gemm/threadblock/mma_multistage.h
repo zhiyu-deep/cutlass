@@ -704,7 +704,7 @@ public:
 
 
   /// Perform a threadblock-scoped matrix multiply-accumulate
-  CUTLASS_DEVICE
+  CUTLASS_HOST_DEVICE
   void operator()(
       ///< problem size of GEMM
       int gemm_k_iterations,
