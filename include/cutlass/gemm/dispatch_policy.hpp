@@ -105,16 +105,22 @@ struct KernelCpAsyncWarpSpecializedPingpong { };
 struct KernelCpAsyncWarpSpecializedCooperative { };
 struct KernelTma { };
 struct KernelTmaWarpSpecialized { };
-struct KernelTmaWarpSpecializedPingpong { 
+struct KernelTmaWarpSpecializedPingpong {
 };
-struct KernelTmaWarpSpecializedCooperative { 
+struct KernelTmaWarpSpecializedCooperative {
 };
 
 struct KernelPtrArrayTmaWarpSpecializedCooperative { };
 struct KernelPtrArrayTmaWarpSpecializedPingpong { };
 
 // FP8 related policies (including Blocked Scaled Accumulation)
-struct KernelTmaWarpSpecializedCooperativeFP8BlockScaledAccum: KernelTmaWarpSpecializedCooperative { };
+template <
+    int ScaleGranularityM = 0  // `ScaleGranularityM` specifies scaling granularity along M, while
+                               // zero-value `ScaleGranularityM` indicates that scaling granularity
+                               // is `size<0>(TileShape_MNK{})` along M.
+>
+struct KernelTmaWarpSpecializedCooperativeFP8BlockScaledAccum
+    : KernelTmaWarpSpecializedCooperative {};
 
 // Policies to opt into mixed type GEMMs
 struct KernelTmaWarpSpecializedMixedInput : KernelTmaWarpSpecialized { };
@@ -293,16 +299,21 @@ struct MainloopSm90TmaGmmaWarpSpecializedFP8
 
 // n-buffer in smem (Hopper TMA), pipelined with Hopper GMMA and TMA, Warp specialized dynamic schedule
 // For FP8 kernels with Block Scaling
-template<
-  int Stages_,
-  class ClusterShape_ = Shape<_1,_1,_1>,
-  class KernelSchedule = KernelTmaWarpSpecialized
+template <
+    int Stages_,
+    class ClusterShape_ = Shape<_1, _1, _1>,
+    class KernelSchedule = KernelTmaWarpSpecialized,
+    int ScaleGranularityM = 0  // `ScaleGranularityM` specifies scaling granularity along M, while
+                               // zero-value `ScaleGranularityM` indicates that scaling granularity
+                               // is `size<0>(TileShape_MNK{})` along M.
 >
 struct MainloopSm90TmaGmmaWarpSpecializedBlockScalingFP8
-  : MainloopSm90TmaGmmaWarpSpecialized<Stages_, ClusterShape_, KernelSchedule> {
+    : MainloopSm90TmaGmmaWarpSpecialized<Stages_, ClusterShape_, KernelSchedule> {
   static_assert(
-    cute::is_same_v<KernelSchedule, KernelTmaWarpSpecializedCooperativeFP8BlockScaledAccum>,
-    "KernelSchedule must be one of the warp specialized policies");
+      cute::is_same_v<
+          KernelSchedule,
+          KernelTmaWarpSpecializedCooperativeFP8BlockScaledAccum<ScaleGranularityM>>,
+      "KernelSchedule must be one of the warp specialized policies");
 };
 
 // n-buffer in smem (Hopper TMA), pipelined with Hopper GMMA and TMA, Warp specialized dynamic schedule for Ptr-Array and Grouped Gemm
@@ -341,7 +352,7 @@ template<
   class ClusterShape = Shape<_1,_1,_1>,
   class KernelSchedule = KernelTmaWarpSpecializedCooperative
 >
-struct MainloopSm90TmaGmmaWarpSpecializedSparseFP8 
+struct MainloopSm90TmaGmmaWarpSpecializedSparseFP8
   : MainloopSm90TmaGmmaWarpSpecializedSparse<Stages, ClusterShape, KernelSchedule> {
 };
 

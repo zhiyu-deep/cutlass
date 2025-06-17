@@ -583,6 +583,7 @@ struct alignment_of : std::alignment_of<value_t> {};
 #endif
 
 /* 16B specializations where 32-bit Win32 host compiler disagrees with device compiler */
+#if defined(__CUDACC_RTC__)
 template <>
 struct alignment_of<int4> {
   enum { value = 16 };
@@ -627,6 +628,7 @@ template <>
 struct alignment_of<double4> {
   enum { value = 16 };
 };
+#endif
 
 // Specializations for volatile/const qualified types
 template <typename value_t>

@@ -257,8 +257,8 @@ to_CUtensorMapL2promotion(L2Promotion const& t) {
   using TmaDescriptor = CUtensorMap;
   using Im2ColTmaDescriptor = CUtensorMap;
 #else
-  using TmaDescriptor = struct alignas(64) { char bytes[128]; };
-  using Im2ColTmaDescriptor = struct alignas(64) { char bytes[128]; };
+  using TmaDescriptor = struct alignas(64) TmaDescriptor_ { char bytes[128]; };
+  using Im2ColTmaDescriptor = struct alignas(64) Im2ColTmaDescriptor_ { char bytes[128]; };
 #endif
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Initiates a TensorMap Prefetch
